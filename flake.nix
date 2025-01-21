@@ -2,7 +2,7 @@
   description = "Tailscale Relay Node for NixOS";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05"; # Nixpkgs version
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
     impermanence.url = "github:nix-community/impermanence";
 
     disko = {
