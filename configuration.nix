@@ -9,6 +9,7 @@ let
   traefikIP = "10.10.1.100";
 in
 {
+  nix.settings.experimental-features = [ "nix-command" "flakes"];
 
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
