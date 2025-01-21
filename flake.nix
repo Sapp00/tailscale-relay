@@ -3,7 +3,6 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
-    impermanence.url = "github:nix-community/impermanence";
 
     disko = {
       url = "github:nix-community/disko";
@@ -25,6 +24,7 @@
           disko.nixosModules.disko
           ./configuration.nix  # The relay node configuration
           { disko.devices.disk.disk1.device = "/dev/sda"; }
+          ./hardware-configuration.nix
  #         tailscale.nixosModules.tailscale  # Import the Tailscale NixOS module
         ];
       };

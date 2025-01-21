@@ -1,3 +1,9 @@
+# Convenience script
+
+Start the NixOS ISO, then run:
+`curl -fsSL https://raw.githubusercontent.com/Sapp00/tailscale-relay/refs/heads/main/setup.sh | sudo bash`
+
+# Doing it manually
 Change the configuration.yaml to enable ssh:
 
 { config, pkgs, ... }:
@@ -13,3 +19,5 @@ Change the configuration.yaml to enable ssh:
 }
 
 Run `sudo nixos-rebuild switch`
+
+
