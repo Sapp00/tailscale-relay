@@ -25,7 +25,7 @@
           disko.nixosModules.disko
           ./disko-config.nix
           {
-            _module.args.disks = [ "/dev/sda" ];
+            _module.args.disks = [ "/dev/vda" ];
           }
           ./configuration.nix  # The relay node configuration
           tailscale.nixosModules.tailscale  # Import the Tailscale NixOS module
