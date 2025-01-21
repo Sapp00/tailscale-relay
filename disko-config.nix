@@ -1,36 +1,39 @@
-{ disks ? [ "/dev/vda" ], ... }: {
+{ 
+  disks ? [ "/dev/vda" ], 
+  ... 
+}: 
+{
   disko.devices = {
     disk = {
       vdb = {
         device = builtins.elemAt disks 0;
         type = "disk";
         content = {
-          type = "table";
-          format = "gpt";
-          partitions = [
-            {
-              name = "ESP";
-              start = "1MiB";
-              end = "500MiB";
-              bootable = true;
+          type = "gpt";
+          partitions = {
+            boot = {
+              size = "1M";
+              type = "EF02"; # for grub MBR
+            };
+            ESP = {
+              size = "512M";
+              type = "EF00";
               content = {
                 type = "filesystem";
                 format = "vfat";
                 mountpoint = "/boot";
+                mountOptions = [ "umask=0077" ];
               };
-            }
-            {
-              name = "root";
-              start = "500MiB";
-              end = "100%";
-              part-type = "primary";
+            };
+            root = {
+              size = "100%";
               content = {
                 type = "filesystem";
-                format = "bcachefs";
+                format = "ext4";
                 mountpoint = "/";
               };
-            }
-          ];
+            };
+          };
         };
       };
     };

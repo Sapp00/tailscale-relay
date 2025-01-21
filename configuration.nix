@@ -14,7 +14,7 @@ in
   networking.defaultGateway = "10.100.10.1";  # Set your gateway
 
   # Optional: Configure DNS for Tailscale network
-  networking.dns.nameservers = [ "10.100.10.1" ];  # Replace with your DNS server or Tailscale DNS
+  networking.nameservers = [ "10.100.10.1" ];  # Replace with your DNS server or Tailscale DNS
 
   # Enable SSH for remote management (optional)
   services.openssh.enable = true;
