@@ -28,4 +28,4 @@ echo "The file $FILE_PATH has been replaced successfully."
 echo "Rebuilding NixOS"
 
 nixos-rebuild switch
-passwd
+passwd nixox
