@@ -28,10 +28,40 @@ in
     interfaces.ens18.ipAddress = "10.100.10.2";  # Set a static IP for this machine, if needed
     defaultGateway = "10.100.10.1";  # Set your gateway
     nameservers = [ "10.100.10.1" ];  # Replace with your DNS server or Tailscale DNS
-  }
+  };
 
-  # Enable SSH for remote management (optional)
-  services.openssh.enable = true;
+  # enable reverse proxy
+  services.nginx = {
+    enable = true;
+
+    streamConfig = ''
+      server {
+        listen 443;
+        proxy_pass 10.10.1.100:443;
+        proxy_timeout 20s;
+        proxy_ssl_server_name on;
+      }
+    '';
+    logError = "stderr debug";
+
+    #virtualHosts."internal" = {
+    #  listen = [ 443 ];
+    #  ssl = true;
+    #  locations."/".proxyPass = "https://10.10.1.100";
+
+    #  locations."/".extraConfig = ''
+    #    proxy_ssl_verify off;
+    #    proxy_ssl_server_name on;
+    #  '';
+    #};
+  };
+
+  services.dnsmasq = {
+    enable = true;
+    alwaysKeepRunning = true;
+    servers = [ "10.100.10.1" ];
+    settings.address = [ "/*.internal/100.64.125.40" ];
+  };
 
   boot = {
     loader = {
@@ -41,15 +71,22 @@ in
     };
   };
 
-  # no password per default, need to set it afterwards
-  users.users.nix = {
+  # Enable SSH for remote management (optional)
+  services.openssh = {
+    enable = true;
+    passwordAuthentication = true;
+  };
+
+  # as default, the passwort is "test". crazy secure, so you better change it in prod. 
+  users.users.nixos = {
     isNormalUser = true;
     description = "Nix";
     extraGroups = [ "wheel" ];
     shell = pkgs.bash;
     home = "/home/nix";
-    hashedPassword = "";
+    hashedPassword = "ab12312";
   };
+  security.sudo.wheelNeedsPassword = false;
 
   hardware.enableRedistributableFirmware = true;
 
