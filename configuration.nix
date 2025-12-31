@@ -7,6 +7,8 @@
 
 let
   traefikIP = "10.10.1.100";
+  dnsServer = "10.100.10.1";
+  tailscaleIP = "100.64.125.40";
 in
 {
   nix.settings.experimental-features = [ "nix-command" "flakes"];
@@ -52,30 +54,22 @@ in
     streamConfig = ''
       server {
         listen 443;
-        proxy_pass 10.10.1.100:443;
+        proxy_pass ${traefikIP}:443;
         proxy_timeout 20s;
         proxy_ssl_server_name on;
       }
     '';
     logError = "stderr debug";
-
-    #virtualHosts."internal" = {
-    #  listen = [ 443 ];
-    #  ssl = true;
-    #  locations."/".proxyPass = "https://10.10.1.100";
-
-    #  locations."/".extraConfig = ''
-    #    proxy_ssl_verify off;
-    #    proxy_ssl_server_name on;
-    #  '';
-    #};
   };
 
+  # Disable systemd-resolved to free up port 53
+  services.resolved.enable = false;
+  
   services.dnsmasq = {
     enable = true;
     alwaysKeepRunning = true;
-    settings.server = [ "10.100.10.1" ];
-    settings.address = [ "/*.internal/100.64.125.40" ];
+    settings.server = [ dnsServer ];
+    settings.address = [ "/*.internal/${tailscaleIP}" ];
   };
 
   boot = {
@@ -124,5 +118,5 @@ in
 
   hardware.enableRedistributableFirmware = true;
 
-  system.stateVersion = "24.11";
+  system.stateVersion = "25.11";
 }
