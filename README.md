@@ -1,30 +1,49 @@
-# VM configuration
-The VM uses a SCSI hard disk and UEFI.
+# Tailscale Relay NixOS
 
-# Convenience script
+A secure relay VM for accessing internal services remotely via Tailscale, without exposing them directly to the internet.
 
-Start the NixOS ISO, then run:
-`curl -fsSL https://raw.githubusercontent.com/Sapp00/tailscale-relay/refs/heads/main/setup.sh | sudo bash`
+## Goal
 
-# Doing it manually
-Change the configuration.yaml to enable ssh:
+Access internal services from anywhere while maintaining network segmentation and security. The relay VM acts as a secure intermediary that forwards requests to internal services via Tailscale.
 
-    { config, pkgs, ... }:
-    {
-        imports = [ <nixpkgs/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix> ];
+Inspired by: https://heymann.dev/blog/tailscale-reverse-proxy/
 
-        services.openssh = {
-            enable = true;
-            settings.PasswordAuthentication = true;
-        };
+## Quick Start
 
-        networking.firewall.allowedTCPPorts = [ 22 ];
-    }
+```bash
+cd deploy
+nix develop
+nix run .#init    # First time setup
+nix run .#deploy  # Deploy to Proxmox
+```
 
-Run `sudo nixos-rebuild switch`. Afterwards change the password with `passwd`, otherwise SSH does not work.
+## Prerequisites
 
-# Building
+- Proxmox VE with NixOS template (ID 116)
+- SOPS encrypted secrets in `deploy/terraform/secrets.sops.json`
+- Tailscale auth key
 
-Build the config on the target VM using `nix run github:nix-community/nixos-anywhere -- --generate-hardware-config nixos-generate-config ./hardware-configuration.nix --flake .#relay-node --target-host nixos@<YourVMsIP> --build-on-remote`
+## Secrets Configuration
 
+```json
+{
+  "url": "https://proxmox:8006",
+  "token": "api-token",
+  "tailscale_key": "tskey-auth-xxxxx",
+  "public_keys": ["ssh-ed25519 AAAAC..."],
+  "vm": {
+    "ip": "10.100.10.5",
+    "gateway": "10.100.10.1",
+    "pve_node": "node-name"
+  }
+}
+```
 
+## Architecture
+
+- **Relay VM**: Connects to Tailscale network
+- **DNS Resolution**: Routes `*.internal` domains to internal IP
+- **HTTPS Proxy**: Forwards traffic to internal reverse proxy
+- **Security**: No direct service exposure, encrypted secrets
+
+The VM provides secure remote access to internal services without compromising network boundaries.

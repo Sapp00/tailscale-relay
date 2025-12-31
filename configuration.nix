@@ -18,16 +18,31 @@ in
     ./tailscale.nix
   ];
 
-  # Networking and firewall configuration
+  # Networking and firewall configuration  
   networking = {
+    hostName = "tailscale-relay";
     firewall.allowedTCPPorts = [
       53 # DNS port
       443  # HTTPS port for Traefik
     ];
-
-    interfaces.ens18.ipAddress = "10.100.10.2";  # Set a static IP for this machine, if needed
-    defaultGateway = "10.100.10.1";  # Set your gateway
-    nameservers = [ "10.100.10.1" ];  # Replace with your DNS server or Tailscale DNS
+    
+    # Use cloud-init for network configuration
+    useNetworkd = true;
+    useDHCP = false;
+  };
+  
+  systemd.network = {
+    enable = true;
+    networks."10-eth" = {
+      matchConfig.Name = "en*";
+      networkConfig.DHCP = "yes";
+    };
+  };
+  
+  # Cloud-init support
+  services.cloud-init = {
+    enable = true;
+    network.enable = true;
   };
 
   # enable reverse proxy
@@ -59,22 +74,22 @@ in
   services.dnsmasq = {
     enable = true;
     alwaysKeepRunning = true;
-    servers = [ "10.100.10.1" ];
+    settings.server = [ "10.100.10.1" ];
     settings.address = [ "/*.internal/100.64.125.40" ];
   };
 
   boot = {
-    loader = {
-      efi.canTouchEfiVariables = true;
-      systemd-boot.enable = true;
-      timeout = 0;
+    loader.grub = {
+      enable = true;
+      efiSupport = true;
     };
+    initrd.availableKernelModules = [ "virtio_net" "virtio_pci" "virtio_mmio" "virtio_blk" "virtio_scsi" "9p" "9pnet_virtio" ];
   };
 
   # Enable SSH for remote management (optional)
   services.openssh = {
     enable = true;
-    passwordAuthentication = true;
+    settings.PasswordAuthentication = false;
   };
 
   # as default, the passwort is "test". crazy secure, so you better change it in prod. 
@@ -83,8 +98,27 @@ in
     description = "Nix";
     extraGroups = [ "wheel" ];
     shell = pkgs.bash;
-    home = "/home/nix";
-    hashedPassword = "ab12312";
+    home = "/home/nixos";
+    # SSH keys will be deployed via --extra-files and fixed with systemd service
+  };
+
+  # Fix SSH key ownership deployed via --extra-files
+  systemd.services.fix-ssh-keys = {
+    description = "Fix SSH key ownership for nixos user";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "users.target" ];
+    script = ''
+      if [ -f /home/nixos/.ssh/authorized_keys ]; then
+        chown nixos:users /home/nixos/.ssh/authorized_keys
+        chmod 600 /home/nixos/.ssh/authorized_keys
+        chown nixos:users /home/nixos/.ssh
+        chmod 700 /home/nixos/.ssh
+      fi
+    '';
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
   };
   security.sudo.wheelNeedsPassword = false;
 

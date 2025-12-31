@@ -1,0 +1,1 @@
+# No complex cloud-init needed - nixos-anywhere handles everything

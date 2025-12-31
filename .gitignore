@@ -1,1 +1,4 @@
 ./hardware-configuration.nix
+secrets.yaml
+deploy/terraform/terraform.tfstate*
+deploy/terraform/.terraform/

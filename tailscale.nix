@@ -26,7 +26,13 @@
         exit 0
       fi
       # otherwise authenticate with tailscale
-      ${tailscale}/bin/tailscale up --auth-key=tskey-auth-<add your key here>
+      if [ -f /etc/tailscale/auth-key ]; then
+        AUTH_KEY=$(cat /etc/tailscale/auth-key)
+        ${tailscale}/bin/tailscale up --auth-key="$AUTH_KEY"
+      else
+        echo "❌ Tailscale auth key file not found at /etc/tailscale/auth-key"
+        exit 1
+      fi
     '';
   };
 }
