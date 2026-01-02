@@ -13,8 +13,9 @@ Inspired by: https://heymann.dev/blog/tailscale-reverse-proxy/
 ```bash
 cd deploy
 nix develop
-nix run .#init    # First time setup
-nix run .#deploy  # Deploy to Proxmox
+nix run .#init     # First time setup
+nix run .#deploy   # Deploy to Proxmox
+nix run .#destroy  # Destroy infrastructure
 ```
 
 ## Prerequisites
@@ -41,9 +42,10 @@ nix run .#deploy  # Deploy to Proxmox
 
 ## Architecture
 
+- **Declarative Infrastructure**: Terraform with nixos-anywhere provider
 - **Relay VM**: Connects to Tailscale network
-- **DNS Resolution**: Routes `*.internal` domains to internal IP
+- **DNS Resolution**: Routes `*.internal` domains to internal IP  
 - **HTTPS Proxy**: Forwards traffic to internal reverse proxy
 - **Security**: No direct service exposure, encrypted secrets
 
-The VM provides secure remote access to internal services without compromising network boundaries.
+The VM provides secure remote access to internal services without compromising network boundaries. Deployment is fully automated and reproducible using GitOps principles.
