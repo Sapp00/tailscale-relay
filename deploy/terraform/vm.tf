@@ -35,7 +35,7 @@ resource "proxmox_virtual_environment_vm" "tailscale_relay" {
     
     user_account {
       username = "admin"
-      keys     = [var.deployment_public_key]
+      keys     = [tls_private_key.deployment.public_key_openssh]
     }
   }
   
@@ -45,14 +45,11 @@ resource "proxmox_virtual_environment_vm" "tailscale_relay" {
   
   # Use SeaBIOS to match template
   bios = "seabios"
+  
 }
 
 # Output the VM's IP address
 output "vm_ip" {
   value = data.sops_file.secrets.data["vm.ip"]
   sensitive = true
-}
-
-output "vm_id" {
-  value = proxmox_virtual_environment_vm.tailscale_relay.vm_id
 }

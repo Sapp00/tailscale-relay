@@ -20,44 +20,23 @@
         echo "📦 Initializing Terraform..."
         terraform init
         
-        # Generate fresh SSH key pair for deployment
-        echo "🔑 Generating SSH key pair for deployment..."
-        ssh-keygen -t ed25519 -f /tmp/deployment-key -N "" -C "nixos-anywhere-deployment"
-        DEPLOYMENT_PUBLIC_KEY=$(cat /tmp/deployment-key.pub)
-        
         echo "📋 Planning deployment..."
-        terraform plan -var="deployment_public_key=$DEPLOYMENT_PUBLIC_KEY"
+        terraform plan
         
         echo ""
         read -p "🤔 Apply this plan? (yes/no): " response
         if [ "$response" = "yes" ]; then
           echo "🔧 Applying Terraform configuration..."
-          terraform apply -auto-approve -var="deployment_public_key=$DEPLOYMENT_PUBLIC_KEY"
+          terraform apply -auto-approve
           
           VM_IP=$(terraform output -raw vm_ip)
           echo "✅ Deployment complete!"
           echo "📍 VM IP: $VM_IP"
           echo "🔗 SSH to your VM:"
           echo "   ssh nixos@$VM_IP"
-          
-          # Cleanup
-          rm -f /tmp/deployment-key /tmp/deployment-key.pub
         else
           echo "❌ Deployment cancelled."
         fi
-      '';
-      
-      initScript = pkgs.writeShellScriptBin "init" ''
-        set -e
-        echo "🔧 Initializing Terraform configuration"
-        
-        echo "✅ terraform.tfvars already configured"
-        echo "🔑 Make sure your SOPS secrets are set up with:"
-        echo "   - Proxmox API credentials (url, token)"
-        echo "   - VM configuration (ip, gateway, nameserver, etc.)"
-        echo "   - Access credentials (password, ssh_public_key)"
-        echo ""
-        echo "🚀 Ready to deploy with: nix run .#deploy"
       '';
 
       destroyScript = pkgs.writeShellScriptBin "destroy" ''
@@ -66,32 +45,25 @@
         
         cd terraform
         
-        # Generate temporary SSH key for compatibility
-        ssh-keygen -t ed25519 -f /tmp/deployment-key -N "" -C "nixos-anywhere-deployment" 2>/dev/null || true
-        DEPLOYMENT_PUBLIC_KEY=$(cat /tmp/deployment-key.pub 2>/dev/null || echo "dummy-key")
-        
         echo "📋 Planning destruction..."
-        terraform plan -destroy -var="deployment_public_key=$DEPLOYMENT_PUBLIC_KEY"
+        terraform plan -destroy
         
         echo ""
         read -p "🤔 Destroy infrastructure? (yes/no): " response
         if [ "$response" = "yes" ]; then
           echo "🗑️ Destroying infrastructure..."
-          terraform destroy -auto-approve -var="deployment_public_key=$DEPLOYMENT_PUBLIC_KEY"
+          terraform destroy -auto-approve
           echo "✅ Infrastructure destroyed!"
         else
           echo "❌ Destruction cancelled."
         fi
-        
-        # Cleanup
-        rm -f /tmp/deployment-key /tmp/deployment-key.pub
       '';
     in
     {
       # Development environment
       devShells.${system}.default = pkgs.mkShell {
         buildInputs = with pkgs; [
-          (terraform.withPlugins (p: [ p.proxmox p.sops p.null p.external ]))
+          (terraform.withPlugins (p: [ p.proxmox p.sops p.null p.external p.tls ]))
           git
           openssh
           curl
@@ -106,7 +78,6 @@
           echo "Available commands:"
           echo "  nix run .#deploy  - Deploy to Proxmox"
           echo "  nix run .#destroy - Destroy infrastructure"
-          echo "  nix run .#init    - Initialize configuration"
         '';
       };
       
@@ -119,10 +90,6 @@
         destroy = {
           type = "app";
           program = "${destroyScript}/bin/destroy";
-        };
-        init = {
-          type = "app";
-          program = "${initScript}/bin/init";
         };
       };
       

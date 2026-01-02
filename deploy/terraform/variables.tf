@@ -67,7 +67,3 @@ variable "flake_path" {
 
 # Proxmox host now derived from SOPS url field
 
-variable "deployment_public_key" {
-  description = "Public SSH key for deployment access"
-  type        = string
-}

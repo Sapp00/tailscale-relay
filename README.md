@@ -13,39 +13,64 @@ Inspired by: https://heymann.dev/blog/tailscale-reverse-proxy/
 ```bash
 cd deploy
 nix develop
-nix run .#init     # First time setup
 nix run .#deploy   # Deploy to Proxmox
 nix run .#destroy  # Destroy infrastructure
 ```
 
 ## Prerequisites
 
-- Proxmox VE with NixOS template (ID 116)
+- Proxmox VE with NixOS cloud-init template (ID 116)
 - SOPS encrypted secrets in `deploy/terraform/secrets.sops.json`
 - Tailscale auth key
 
+## Deployment Features
+
+- **Ephemeral SSH Keys**: Auto-generated per deployment for security
+- **Automated Installation**: Uses nixos-anywhere for declarative OS deployment
+- **GitOps Ready**: All infrastructure defined in code
+- **Encrypted Secrets**: SOPS integration for secure credential management
+- **Cloud-init Integration**: Seamless VM bootstrapping
+
 ## Secrets Configuration
+
+Create `deploy/terraform/secrets.sops.json` with:
 
 ```json
 {
-  "url": "https://proxmox:8006",
-  "token": "api-token",
+  "url": "https://proxmox.local",
+  "port": 8006,
+  "id": "terraform@pve",
+  "token": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
   "tailscale_key": "tskey-auth-xxxxx",
-  "public_keys": ["ssh-ed25519 AAAAC..."],
   "vm": {
-    "ip": "10.100.10.5",
-    "gateway": "10.100.10.1",
-    "pve_node": "node-name"
+    "ip": "10.100.10.2",
+    "gateway": "10.100.10.1", 
+    "nameserver": "10.100.10.1",
+    "vlan": 100,
+    "pve_node": "proxmox",
+    "password": "bootstrap-password"
   }
 }
 ```
 
+Encrypt with: `sops -e secrets.json > secrets.sops.json`
+
 ## Architecture
 
-- **Declarative Infrastructure**: Terraform with nixos-anywhere provider
-- **Relay VM**: Connects to Tailscale network
-- **DNS Resolution**: Routes `*.internal` domains to internal IP  
-- **HTTPS Proxy**: Forwards traffic to internal reverse proxy
-- **Security**: No direct service exposure, encrypted secrets
+- **Infrastructure**: Terraform with Proxmox provider
+- **OS Deployment**: nixos-anywhere with disko for disk partitioning
+- **VM Management**: Proxmox cloud-init for initial bootstrap
+- **Relay Service**: Tailscale mesh networking
+- **DNS Resolution**: Routes `*.internal` domains to internal services
+- **Security**: Ephemeral keys, encrypted secrets, network segmentation
 
-The VM provides secure remote access to internal services without compromising network boundaries. Deployment is fully automated and reproducible using GitOps principles.
+## Technical Details
+
+The deployment automatically:
+1. Generates ephemeral SSH key pair via Terraform TLS provider
+2. Creates Proxmox VM with cloud-init configuration
+3. Runs nixos-anywhere to install NixOS declaratively
+4. Configures Tailscale relay with encrypted auth key
+5. Sets up DNS forwarding and traffic routing
+
+No manual SSH key management or VM template modification required.
