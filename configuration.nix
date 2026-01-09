@@ -6,7 +6,7 @@
 }:
 
 let
-  traefikIP = "10.10.1.100";
+  traefikIP = "10.10.10.100";
   dnsServer = "10.100.10.1";
   tailscaleIP = "100.64.125.40";
 in
